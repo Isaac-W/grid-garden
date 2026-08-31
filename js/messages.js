@@ -293,6 +293,9 @@ var messages = {
     'ur': 'گرڈ گارڈن - CSS  گرڈ سیکھنے کے لیے ایک کھیل',
     'ps': 'د ګریډ باغ - د CSS ګریډ زده کولو لپاره یوه لوبه'
   },
+  labelExport: {
+    'en': 'Export Progress'
+  },
   labelReset: {
     'en': 'Reset',
     'bn': 'রিসেট',

@@ -94,6 +94,10 @@ var game = {
       $(this).removeClass();
     });
 
+    $('#labelExport').on('click', function() {
+      game.exportProgress();
+    });
+
     $('#labelReset').on('click', function() {
       var warningReset = messages.warningReset[game.language] || messages.warningReset.en;
       var r = confirm(warningReset);
@@ -354,32 +358,24 @@ var game = {
     });
 
     if (correct) {
-      ga('send', {
-        hitType: 'event',
-        eventCategory: level.name,
-        eventAction: 'correct',
-        eventLabel: $('#code').val()
-      });
-            
       if ($.inArray(level.name, game.solved) === -1) {
         game.solved.push(level.name);
       }
+      localStorage.setItem('solved', JSON.stringify(game.solved));
+      localStorage.setItem('level', game.level);
 
       $('[data-level=' + game.level + ']').addClass('solved');
       $('#next').removeClass('disabled').addClass('animated animation');
     } else {
-      ga('send', {
-        hitType: 'event',
-        eventCategory: level.name,
-        eventAction: 'incorrect',
-        eventLabel: $('#code').val()
-      });
+      game.changed = true;
+      $('#next').removeClass('animated animation').addClass('disabled');
     }
   },
 
   saveAnswer: function() {
     var level = levels[this.level];
     game.answers[level.name] = $('#code').val();
+    localStorage.setItem('answers', JSON.stringify(game.answers));
   },
 
   tryagain: function() {
@@ -435,6 +431,67 @@ var game = {
       timeout = setTimeout(later, wait);
       if (callNow) func.apply(context, args);
     };
+  },
+
+  generateVerificationHash: function(str) {
+    var hash = 5381;
+    for (var i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash) + str.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return (hash >>> 0).toString(16).padStart(8, "0");
+  },
+
+  exportProgress: function() {
+    game.check();
+    game.saveAnswer();
+    localStorage.setItem('level', game.level);
+    localStorage.setItem('answers', JSON.stringify(game.answers));
+    localStorage.setItem('solved', JSON.stringify(game.solved));
+
+    var solved = game.solved || [];
+    var levelsExport = [];
+    var completedCount = 0;
+
+    levels.forEach(function(lvl, i) {
+      var levelName = lvl.name || ('Level ' + (i + 1));
+      var isCompleted = $.inArray(lvl.name, solved) !== -1;
+
+      if (isCompleted) {
+        completedCount++;
+      }
+
+      var levelEntry = {
+        level: i + 1,
+        name: levelName,
+        completed: isCompleted
+      };
+
+      if (isCompleted) {
+        levelEntry.verification = game.generateVerificationHash(levelName);
+      }
+
+      levelsExport.push(levelEntry);
+    });
+
+    var exportData = {
+      game: 'grid-garden',
+      exportDate: new Date().toISOString(),
+      totalLevels: levels.length,
+      completedLevels: completedCount,
+      levels: levelsExport
+    };
+
+    var jsonString = JSON.stringify(exportData, null, 2);
+    var blob = new Blob([jsonString], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'grid-garden-progress.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };
 

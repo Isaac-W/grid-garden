@@ -3,6 +3,7 @@ var game = {
   level: parseInt(localStorage.level, 10) || 0,
   answers: (localStorage.answers && JSON.parse(localStorage.answers)) || {},
   solved: (localStorage.solved && JSON.parse(localStorage.solved)) || [],
+  verifications: (localStorage.verifications && JSON.parse(localStorage.verifications)) || {},
   user: localStorage.user || '',
   changed: false,
 
@@ -25,6 +26,7 @@ var game = {
       localStorage.setItem('user', game.user);
     }
 
+    game.pruneSolved();
     this.setHandlers();
     this.loadMenu();
     game.loadLevel(levels[game.level]);
@@ -106,6 +108,9 @@ var game = {
         game.level = 0;
         game.answers = {};
         game.solved = [];
+        game.verifications = {};
+        localStorage.setItem('solved', JSON.stringify(game.solved));
+        localStorage.setItem('verifications', JSON.stringify(game.verifications));
         game.loadLevel(levels[0]);
 
         $('.level-marker').removeClass('solved');
@@ -136,6 +141,7 @@ var game = {
       localStorage.setItem('level', game.level);
       localStorage.setItem('answers', JSON.stringify(game.answers));
       localStorage.setItem('solved', JSON.stringify(game.solved));
+      localStorage.setItem('verifications', JSON.stringify(game.verifications));
     }).on('hashchange', function() {
       game.language = window.location.hash.substring(1) || 'en';
       game.translate();
@@ -358,10 +364,7 @@ var game = {
     });
 
     if (correct) {
-      if ($.inArray(level.name, game.solved) === -1) {
-        game.solved.push(level.name);
-      }
-      localStorage.setItem('solved', JSON.stringify(game.solved));
+      game.recordSolved(level.name);
       localStorage.setItem('level', game.level);
 
       $('[data-level=' + game.level + ']').addClass('solved');
@@ -433,6 +436,31 @@ var game = {
     };
   },
 
+  isVerified: function(name) {
+    return game.verifications[name] === game.generateVerificationHash(name);
+  },
+
+  recordSolved: function(name) {
+    game.verifications[name] = game.generateVerificationHash(name);
+    if ($.inArray(name, game.solved) === -1) {
+      game.solved.push(name);
+    }
+    localStorage.setItem('solved', JSON.stringify(game.solved));
+    localStorage.setItem('verifications', JSON.stringify(game.verifications));
+  },
+
+  // Drops any solved level whose stored verification code is missing or wrong
+  pruneSolved: function() {
+    game.solved = game.solved.filter(game.isVerified);
+    Object.keys(game.verifications).forEach(function(name) {
+      if (!game.isVerified(name)) {
+        delete game.verifications[name];
+      }
+    });
+    localStorage.setItem('solved', JSON.stringify(game.solved));
+    localStorage.setItem('verifications', JSON.stringify(game.verifications));
+  },
+
   generateVerificationHash: function(str) {
     var hash = 5381;
     for (var i = 0; i < str.length; i++) {
@@ -455,7 +483,7 @@ var game = {
 
     levels.forEach(function(lvl, i) {
       var levelName = lvl.name || ('Level ' + (i + 1));
-      var isCompleted = $.inArray(lvl.name, solved) !== -1;
+      var isCompleted = $.inArray(lvl.name, solved) !== -1 && game.isVerified(lvl.name);
 
       if (isCompleted) {
         completedCount++;
@@ -467,7 +495,7 @@ var game = {
       };
 
       if (isCompleted) {
-        levelEntry.verification = game.generateVerificationHash(levelName);
+        levelEntry.verification = game.verifications[lvl.name];
       }
 
       levelsExport[levelName] = levelEntry;

@@ -1,10 +1,10 @@
 var game = {
   language: window.location.hash.substring(1) || 'en',
-  level: parseInt(localStorage.level, 10) || 0,
-  answers: (localStorage.answers && JSON.parse(localStorage.answers)) || {},
-  solved: (localStorage.solved && JSON.parse(localStorage.solved)) || [],
-  verifications: (localStorage.verifications && JSON.parse(localStorage.verifications)) || {},
-  user: localStorage.user || '',
+  level: parseInt(localStorage['grid_garden_level'], 10) || 0,
+  answers: (localStorage['grid_garden_answers'] && JSON.parse(localStorage['grid_garden_answers'])) || {},
+  solved: (localStorage['grid_garden_solved'] && JSON.parse(localStorage['grid_garden_solved'])) || [],
+  verifications: (localStorage['grid_garden_verifications'] && JSON.parse(localStorage['grid_garden_verifications'])) || {},
+  user: localStorage['grid_garden_user'] || '',
   changed: false,
 
   start: function() {
@@ -21,9 +21,9 @@ var game = {
     $('#editor').show();
     $('#share').hide();
 
-    if (!localStorage.user) {
+    if (!localStorage['grid_garden_user']) {
       game.user = '' + (new Date()).getTime() + Math.random().toString(36).slice(1);
-      localStorage.setItem('user', game.user);
+      localStorage.setItem('grid_garden_user', game.user);
     }
 
     game.pruneSolved();
@@ -109,8 +109,8 @@ var game = {
         game.answers = {};
         game.solved = [];
         game.verifications = {};
-        localStorage.setItem('solved', JSON.stringify(game.solved));
-        localStorage.setItem('verifications', JSON.stringify(game.verifications));
+        localStorage.setItem('grid_garden_solved', JSON.stringify(game.solved));
+        localStorage.setItem('grid_garden_verifications', JSON.stringify(game.verifications));
         game.loadLevel(levels[0]);
 
         $('.level-marker').removeClass('solved');
@@ -138,10 +138,10 @@ var game = {
 
     $(window).on('beforeunload', function() {
       game.saveAnswer();
-      localStorage.setItem('level', game.level);
-      localStorage.setItem('answers', JSON.stringify(game.answers));
-      localStorage.setItem('solved', JSON.stringify(game.solved));
-      localStorage.setItem('verifications', JSON.stringify(game.verifications));
+      localStorage.setItem('grid_garden_level', game.level);
+      localStorage.setItem('grid_garden_answers', JSON.stringify(game.answers));
+      localStorage.setItem('grid_garden_solved', JSON.stringify(game.solved));
+      localStorage.setItem('grid_garden_verifications', JSON.stringify(game.verifications));
     }).on('hashchange', function() {
       game.language = window.location.hash.substring(1) || 'en';
       game.translate();
@@ -365,7 +365,7 @@ var game = {
 
     if (correct) {
       game.recordSolved(level.name);
-      localStorage.setItem('level', game.level);
+      localStorage.setItem('grid_garden_level', game.level);
 
       $('[data-level=' + game.level + ']').addClass('solved');
       $('#next').removeClass('disabled').addClass('animated animation');
@@ -378,7 +378,7 @@ var game = {
   saveAnswer: function() {
     var level = levels[this.level];
     game.answers[level.name] = $('#code').val();
-    localStorage.setItem('answers', JSON.stringify(game.answers));
+    localStorage.setItem('grid_garden_answers', JSON.stringify(game.answers));
   },
 
   tryagain: function() {
@@ -445,8 +445,8 @@ var game = {
     if ($.inArray(name, game.solved) === -1) {
       game.solved.push(name);
     }
-    localStorage.setItem('solved', JSON.stringify(game.solved));
-    localStorage.setItem('verifications', JSON.stringify(game.verifications));
+    localStorage.setItem('grid_garden_solved', JSON.stringify(game.solved));
+    localStorage.setItem('grid_garden_verifications', JSON.stringify(game.verifications));
   },
 
   // Drops any solved level whose stored verification code is missing or wrong
@@ -457,8 +457,8 @@ var game = {
         delete game.verifications[name];
       }
     });
-    localStorage.setItem('solved', JSON.stringify(game.solved));
-    localStorage.setItem('verifications', JSON.stringify(game.verifications));
+    localStorage.setItem('grid_garden_solved', JSON.stringify(game.solved));
+    localStorage.setItem('grid_garden_verifications', JSON.stringify(game.verifications));
   },
 
   generateVerificationHash: function(str) {
@@ -473,9 +473,9 @@ var game = {
   exportProgress: function() {
     game.check();
     game.saveAnswer();
-    localStorage.setItem('level', game.level);
-    localStorage.setItem('answers', JSON.stringify(game.answers));
-    localStorage.setItem('solved', JSON.stringify(game.solved));
+    localStorage.setItem('grid_garden_level', game.level);
+    localStorage.setItem('grid_garden_answers', JSON.stringify(game.answers));
+    localStorage.setItem('grid_garden_solved', JSON.stringify(game.solved));
 
     var solved = game.solved || [];
     var levelsExport = {};
